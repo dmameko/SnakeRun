@@ -9,9 +9,16 @@ function(Router){
         init(){
             if(this.initialized) return;
 
-            let router = new Router();
-
-            this.route = router.init();
+            let router = new Router({
+                baseUrl: "views/",
+                paths: {
+                    "settings": "SettingsCtrl",
+                    "newgame": "NewGameCtrl",
+                    "continue": "ContinueCtrl",
+                    "home": "HomeCtrl"
+                },
+                otherwise: "home"
+            });
 
             this.initialized = true;
         }

@@ -4,11 +4,17 @@
     <meta charset="UTF-8">
     <title>Snake Run</title>
 
+    <link rel="stylesheet" href="style/reset.css"/>
+    <link rel="stylesheet" href="style/main.css"/>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.19.0/babel.min.js"></script>
     <script data-main="js/main" src="js/libs/require.min.js"></script>
 </head>
 <body>
-    <a href="#/settings">H</a>
-    <div data-view></div>
+    <div class="app-container app-bg">
+        <div class="app-bg__grass"></div>
+        <img class="app-bg__sun" src="images/sun.png"/>
+        <div class="app-bg__view app-view" data-view></div>
+    </div>
 </body>
 </html>
