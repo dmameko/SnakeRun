@@ -1,1 +1,41 @@
-<div>Settings</div>
+<div class="app-settings">
+    <div class="app-settings__bg">
+        <nav class="app-settings__list">
+            <img src="../images/menu.png"/>
+            <ul class="app-settings-list">
+                <li class="app-settings-list__item app-settings-list-item__music">
+                    <span class="app-settings__label">Music</span>
+                    <br/>
+                    <input type="radio" name="music" value="ON" id="music_on" checked/>
+                    <label for="music_on">ON</label>
+                    <input type="radio" name="music" value="OFF" id="music_off"/>
+                    <label for="music_off">OFF</label>
+                </li>
+                <li class="app-settings-list__item app-settings-list-item__game-effects">
+                    <span class="app-settings__label">Game Effects</span>
+                    <br/>
+                    <input type="radio" name="game_effects" value="ON" id="ge_on" checked/>
+                    <label for="ge_on">ON</label>
+                    <input type="radio" name="game_effects" value="OFF" id="ge_off"/>
+                    <label for="ge_off">OFF</label>
+                </li>
+                <li class="app-settings-list__item app-settings-list-item__lang">
+                    <span class="app-settings__label">Language</span>
+                    <br/>
+                    <input type="radio" name="lang" value="ru" id="lang_ru"/>
+                    <label for="lang_ru">
+                        <img src="../images/flags/rus.png" />
+                    </label>
+                    <input type="radio" name="lang" id="lang_ua"/>
+                    <label for="lang_ua">
+                        <img src="../images/flags/ukr.png" />
+                    </label>
+                    <input type="radio" name="lang" checked id="lang_en"/>
+                    <label for="lang_en">
+                        <img src="../images/flags/eng.png" />
+                    </label>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>

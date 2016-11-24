@@ -34,9 +34,16 @@ define([
                 }
             }
 
+            console.log(this.paths[view]);
+
             this._getView(view).then(
                 (viewHTML) => {
-                    this._domEl.innerHTML = viewHTML;
+                    this._getController(view).then(
+                        (ctrlContent) => {
+                            this._domEl.innerHTML = viewHTML;
+                            eval(ctrlContent);
+                        }
+                    );
                 }
             );
         }
@@ -64,6 +71,29 @@ define([
                         xhr.send();
                     }
 
+                }
+            );
+        }
+
+        _getController(viewId){
+            const self = this;
+
+            return new Promise(
+                (resolve, reject) =>
+                {
+                    let xhr = new XMLHttpRequest();
+
+                    xhr.open("GET", this.ctrlUrl + "/" + this.paths[viewId] + ".js");
+                    xhr.onreadystatechange = function(){
+                        if(xhr.readyState === 4){
+                            if(xhr.status === 200){
+                                resolve(xhr.responseText);
+                            } else{
+                                reject(xhr.errorCode);
+                            }
+                        }
+                    };
+                    xhr.send();
                 }
             );
         }

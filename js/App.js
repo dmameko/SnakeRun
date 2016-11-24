@@ -11,6 +11,7 @@ function(Router){
 
             let router = new Router({
                 baseUrl: "views/",
+                ctrlUrl: "js/controllers",
                 paths: {
                     "settings": "SettingsCtrl",
                     "newgame": "NewGameCtrl",
