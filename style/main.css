@@ -182,7 +182,8 @@ input[type=radio]:checked + label:before {
     background-position: center center;
 }
 
-.app-home-nav__appear{
+.app-home-nav__appear,
+.app-settings__appear{
     animation-timing-function: cubic-bezier(0.190, 1.000, 0.220, 1.000);
     animation-name: showMenu;
     animation-duration: 500ms;

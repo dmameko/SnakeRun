@@ -1,7 +1,8 @@
 define([
-    "utils/Router"
+    "utils/Router",
+    "utils/Audio"
 ],
-function(Router){
+function(Router, Audio){
     class App {
         constructor(){
             this.initialized = false;
@@ -20,6 +21,8 @@ function(Router){
                 },
                 otherwise: "home"
             });
+
+            this.audio = new Audio();
 
             this.initialized = true;
         }

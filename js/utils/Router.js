@@ -104,13 +104,6 @@ define([
                 }
             );
         }
-
-        init(){
-
-            if(config.baseUrl){
-
-            }
-        }
     }
 
     return Router;
