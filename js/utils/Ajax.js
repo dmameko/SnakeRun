@@ -3,7 +3,7 @@ define([
 ], function(Utils){
     class Ajax{
         static get(options){
-            if(options && options.url) return;
+            if(!options || !options.url) return;
 
             return new Promise(
                 (resolve, reject) => {

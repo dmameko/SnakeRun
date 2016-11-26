@@ -1,7 +1,8 @@
 define([
     "utils/index",
-    "utils/String"
-], function(Utils){
+    "utils/String",
+    "utils/Localize"
+], function(Utils, String, Localize){
     class Router{
         constructor(config){
             if(config === undefined){
@@ -24,7 +25,7 @@ define([
 
         _locationChanged(){
             let path = window.location.hash,
-                [ hash, view ] = Utils.String.trim(path, "/").split("/");
+                [ hash, view ] = String.trim(path, "/").split("/");
 
             if(hash !== "#"){
                 window.location.replace("#/" + this.otherwise);
@@ -34,14 +35,20 @@ define([
                 }
             }
 
-            console.log(this.paths[view]);
-
             this._getView(view).then(
                 (viewHTML) => {
                     this._getController(view).then(
                         (ctrlContent) => {
-                            this._domEl.innerHTML = viewHTML;
-                            eval(ctrlContent);
+                            const loc = new Localize();
+                            let __html = "";
+
+                            loc.promise.then(
+                                () => {
+                                    __html = loc.translate(viewHTML);
+                                    this._domEl.innerHTML = __html;
+                                    eval(ctrlContent);
+                                }
+                            );
                         }
                     );
                 }

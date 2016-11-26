@@ -1,6 +1,5 @@
 define([
-    "utils/Router",
-    "utils/Ajax"
+    "utils/Router"
 ],
 function(Router){
     class App {
@@ -9,14 +8,6 @@ function(Router){
         }
         init(){
             if(this.initialized) return;
-
-            Ajax.get({
-                url: "/localization"
-            }).then(
-                (localization) => {
-
-                }
-            );
 
             let router = new Router({
                 baseUrl: "views/",
