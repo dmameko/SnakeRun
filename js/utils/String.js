@@ -7,7 +7,7 @@ define([
 
         searchResults = str.match(/[^{}]*(?=\})/g);
 
-        if(searchResults === -1){
+        if(searchResults === -1 || !searchResults){
             return keys;
         } else{
             keys = searchResults.filter(

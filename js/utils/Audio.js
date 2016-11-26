@@ -26,7 +26,7 @@ define([
             }
 
             Storage.saveToStorage("music", musicVal, localStorage);
-            Storage.saveToStorage("game_effect", geVal, localStorage);
+            Storage.saveToStorage("game_effects", geVal, localStorage);
         }
 
         onMusic(){

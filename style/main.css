@@ -175,6 +175,11 @@ input[type=radio] {
     box-shadow: 0px 0px 3px 0px rgba(0,0,0,0.75);
 }
 
+.app-nav-item__disabled{
+    color: #666 !important;
+    cursor: default !important;
+}
+
 input[type=radio]:checked + label:before {
     content: "";
     background-image: url(../images/nail.png);
