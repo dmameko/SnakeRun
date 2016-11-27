@@ -194,6 +194,11 @@ input[type=radio]:checked + label:before {
     animation-duration: 500ms;
 }
 
+.app-game-area{
+    display: block;
+    margin: 15px auto;
+}
+
 @keyframes showMenu {
     0% { transform: translateY(-100%); }
     100% { transform: translateY(0%); }
