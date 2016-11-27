@@ -6,67 +6,67 @@ define(
         const LEVELS = {
             1: {
                 foods: 5,
-                barriers: 1,
+                barriers: 10,
                 speed: 1,
-                startLength: 2
+                startLength: 3
             },
             2: {
                 foods: 7,
-                barriers: 3,
+                barriers: 15,
                 speed: 2,
-                startLength: 2
+                startLength: 3
             },
             3: {
                 foods: 10,
-                barriers: 5,
+                barriers: 15,
                 speed: 3,
-                startLength: 3
+                startLength: 4
             },
             4: {
                 foods: 14,
-                barriers: 7,
+                barriers: 20,
                 speed: 4,
-                startLength: 3
+                startLength: 4
             },
             5: {
                 foods: 16,
-                barriers: 9,
+                barriers: 20,
                 speed: 4,
-                startLength: 4
+                startLength: 5
             },
             6: {
                 foods: 17,
-                barriers: 10,
+                barriers: 25,
                 speed: 5,
-                startLength: 4
+                startLength: 5
             },
             7: {
                 foods: 18,
-                barriers: 11,
+                barriers: 30,
                 speed: 5,
-                startLength: 4
+                startLength: 6
             },
             8: {
                 foods: 19,
-                barriers: 12,
+                barriers: 30,
                 speed: 6,
-                startLength: 5
+                startLength: 6
             },
             9: {
                 foods: 20,
-                barriers: 13,
+                barriers: 30,
                 speed: 6,
-                startLength: 5
+                startLength: 7
             },
             10: {
                 foods: 25,
-                barriers: 15,
-                speed: 7,
-                startLength: 6
+                barriers: 35,
+                speed: 6,
+                startLength: 8
             }
         };
         const SIZE = {
-            width: 35,
+            width: 25,
             height: 20
         };
         const LIVES = 3;
@@ -81,7 +81,6 @@ define(
             TO_BOTTOM: 3,
             TO_LEFT: 4,
         };
-
         let prevStepSnake;
 
         class Game {
@@ -121,7 +120,7 @@ define(
                         point = { x, y };
 
                     // exclude doubles
-                    if(this._isBarrierAlreadyExists(point)){
+                    if(this._isBarrierAlreadyExists(point) || this._isSnakePoint(point)){
                         i--;
                     } else{
                         this.barriers.push({ x, y });
@@ -129,8 +128,26 @@ define(
                 }
             }
 
+            _isSnakePoint(b){
+                const snake = this.snake;
+                const len = snake.length;
+
+                for(let i = 0; i < len; i++){
+                    let p = snake[i];
+
+                    if(
+                        (p.x === b.x && p.y === b.y)
+                        || (p.x + 1 === b.x && p.y === b.y)
+                        || (p.x + 1 === b.x && p.y + 1 === b.y)
+                        || (p.x + 1 === b.x && p.y - 1 === b.y)
+                    ) return true;
+
+                }
+
+                return false;
+            }
+
             _createMarkup(){
-                this._createBarriers();
                 this._createCanvas();
             }
 
@@ -144,14 +161,25 @@ define(
                 this._defineDefaultImages().then(
                     () => {
                         this._fillCanvasBG();
-                        this._renderBarriers();
                         this._addControlsListeners();
                         this._initSnake();
+                        this._createBarriers();
+
+                        this._createApple();
+                        this._drawApple();
+
                         this._drawSnake();
+                        this._renderBarriers();
                     }
                 );
 
                 this.DOM.renderTo.appendChild(this.DOM.canvas);
+
+                this.timer = setInterval(
+                    () => {
+                        this._nextStep();
+                    }, 500 / (LEVELS[this.state.level].speed * 0.7)
+                );
             }
 
             _fillCanvasBG(){
@@ -225,6 +253,47 @@ define(
                 );
             }
 
+            _createApple(){
+                if(!this.state.foodsRemain){
+                    return;
+                }
+
+                console.log(this.state.foodsRemain);
+
+                let [ x, y ] = [ this._randomNumber(0, SIZE.width), this._randomNumber(0, SIZE.height) ];
+
+                while(
+                    this._isBarrierAlreadyExists({ x, y })
+                    || this._isSnakePoint({ x, y })
+                    ){
+                    [ x, y ] = [ this._randomNumber(0, SIZE.width), this._randomNumber(0, SIZE.height) ];
+                }
+
+                this.state.foodsRemain -= 1;
+                this.apple = { x, y };
+            }
+
+            _drawApple(){
+                const ctx = this.DOM.canvas.getContext("2d");
+                const p = this.apple;
+
+                ctx.drawImage(
+                    this.spriteImg,
+                    0,
+                    60,
+                    POINT_SIZE,
+                    POINT_SIZE,
+                    p.x * POINT_SIZE,
+                    p.y * POINT_SIZE,
+                    POINT_SIZE,
+                    POINT_SIZE
+                );
+            }
+
+            _doesSnakeEatApple(){
+                return this.snake[0].x === this.apple.x && this.snake[0].y === this.apple.y;
+            }
+
             _initSnake(){
                 let length = LEVELS[this.state.level].startLength;
 
@@ -239,14 +308,42 @@ define(
                         end: 2
                     });
                 }
+
+                this.state.foodsRemain = LEVELS[this.state.level].foods;
+            }
+
+            _isSnakeEatSnake(b){
+                const snake = this.snake;
+                const len = snake.length;
+
+                for(let i = 1; i < len; i++){
+                    let p = snake[i];
+
+                    if(p.x === b.x && p.y === b.y) return true;
+
+                }
+
+                return false;
             }
 
             _drawSnake(){
                 let ctx = this.DOM.canvas.getContext("2d"),
                     len = this.snake.length - 1;
 
-                if(!this._doesNotEdgesTouch()){
+                this._clearSnake();
+
+                if(
+                    !this._doesNotEdgesTouch()
+                    || !this._doesNotBarriersTouch()
+                    || this._isSnakeEatSnake(this.snake[0])
+                ){
+                    clearInterval(this.timer);
                     this.snake = prevStepSnake;             //// HERE YOU NEED TO WRITE "GAME OVER"!!!
+                }
+
+                if(!this.state.foodsRemain){
+                    clearInterval(this.timer);
+                    this.snake = prevStepSnake;             //// HERE YOU NEED TO WRITE "CONGRATS! NEXT LEVEL!!!"
                 }
 
                 this.snake.forEach(
@@ -433,38 +530,59 @@ define(
             }
 
             _nextStep(dir){
-                const snake = this.snake;
-                const snakeCopy = this._copySnakeDeep();
-                const len = snake.length;
+                let snake = this.snake;
+                let snakeCopy = this._copySnakeDeep();
 
                 this._clearSnake();
 
+                dir = dir || this.snake[0].dir;
+
                 prevStepSnake = this._copySnakeDeep();
 
-                dir = dir || snake[0].dir;
-
-                for(let i = 0; i < len; i++){
-                    let p = snake[i];
+                for(let i = 0; i < this.snake.length; i++){
+                    let p = this.snake[i];
 
                     if(i === 0){
                         if(this._isReverse(p.dir, dir)){
                             break;
                         } else{
-                            snake[i].dir = dir;
-                            this._movePoint(snake[i]);
+                            this.snake[i].dir = dir;
+                            this._movePoint(this.snake[i]);
                         }
                     } else {
-                        snake[i].x = snakeCopy[i - 1].x;
-                        snake[i].y = snakeCopy[i - 1].y;
+                        this.snake[i].x = snakeCopy[i - 1].x;
+                        this.snake[i].y = snakeCopy[i - 1].y;
 
-                        if(i !== len - 1){
-                            snake[i].dir = snake[i].start;
-                            snake[i].start = snake[i - 1].dir;
-                            snake[i].end = snake[i].dir;
+                        if(i !== this.snake.length - 1){
+                            this.snake[i].dir = this.snake[i].start;
+                            this.snake[i].start = this.snake[i - 1].dir;
+                            this.snake[i].end = this.snake[i].dir;
                         } else{
-                            snake[i].dir = snake[i - 1].end;
+                            this.snake[i].dir = this.snake[i - 1].end;
+                            this.snake[i].start = this.snake[i - 1].end;
+                            this.snake[i].end = this.snake[i - 1].end;
                         }
                     }
+                }
+
+                if(this._doesSnakeEatApple()){
+                    this._createApple();
+                    this._drawApple();
+
+                    let lastPoint = Object.assign({}, this.snake[this.snake.length - 1]);
+
+                    if(lastPoint.dir === 1){
+                        lastPoint.y += 1;
+                    } else if(lastPoint.dir === 2){
+                        lastPoint.x -= 1;
+                    } else if(lastPoint.dir === 3){
+                        lastPoint.y -= 1;
+                    } else if(lastPoint.dir === 4){
+                        lastPoint.x += 1;
+                    }
+
+                    prevStepSnake.slice(lastPoint);
+                    this.snake.push(lastPoint);
                 }
 
                 this._drawSnake();
@@ -504,6 +622,27 @@ define(
 
                     if(x < 0 || x >= SIZE.width || y < 0 || y >= SIZE.height) return false;
 
+                }
+
+                return true;
+            }
+
+            _doesNotBarriersTouch(){
+                const snake = this.snake;
+                const barLength = this.barriers.length;
+                const len = snake.length;
+
+                for(let i = 0; i < barLength; i++){
+                    if(!doesNotBarrierTouch(this.barriers[i])) return false;
+
+                }
+
+                function doesNotBarrierTouch(b){
+                    for(let i = 0; i < len; i++){
+                        if(snake[i].x === b.x && snake[i].y === b.y) return false;
+                    }
+
+                    return true;
                 }
 
                 return true;
