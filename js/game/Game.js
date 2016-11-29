@@ -1,9 +1,10 @@
 define(
     [
         "utils/Ajax",
-        "utils/Localize"
+        "utils/Localize",
+        "utils/Storage"
     ],
-    function(Ajax, Localize){
+    function(Ajax, Localize, Storage){
         const LEVELS = {
             1: {
                 foods: 1,
@@ -142,8 +143,7 @@ define(
                     (response) => {
                         renderTo.innerHTML = Localize.getInstance().translate(response);
                         this._initDOMElements();
-                        this._initLevel();
-                        this._addControlsListeners();
+                        this._initLevel();                        
                     }
                 );
             }
@@ -158,12 +158,14 @@ define(
                     score: qSelector("#game_area_score"),
                     level: qSelector("#game_area_level"),
                     foods: qSelector("#game_area_foods"),
-                    saveBtn: qSelector("#game_area_save"),
-                    stopContinueBtn: qSelector("#game_area_pause")
+                    saveBtn: qSelector("#game_area_save"),                    
+                    homeBtn: qSelector("#game_area_home"),                  
+                    msgBox: qSelector("#game_msg"),               
+                    newGameBtn: qSelector("#game_area_new_game")                  
                 };
 
                 // init properties for canvas
-                this.DOM.canvas.classList.add("app-game-area");
+                this.DOM.canvas.classList.add("app-game-area-canvas");
                 this.DOM.canvas.width = SIZE.width * POINT_SIZE;
                 this.DOM.canvas.height = SIZE.height * POINT_SIZE;
 
@@ -171,23 +173,46 @@ define(
                 this.context = this.DOM.canvas.getContext("2d");
             }
 
-            _initLevel(){
-                this.foods = LEVELS[this.level].foods;
-                this._clearGameArea();
-                this._initSnake();
-                this._createBarriers();
-                this._createApple();
-                this._initScoreInfo();
-                this._initFoodsInfo();
+            _initLevel(){				
+				this._showMsg("Level " + this.level);
+			
+				let counter = 10;							
+				let timeout = setTimeout(
+					() => {
+						clearTimeout(timeout);
+						let timer = setInterval(
+							() => {
+								this._showMsg(counter);
+						
+								if(!counter){
+									clearInterval(timer);
+									this._hideMsg();
+																		
+									this._addControlsListeners();
+									this.foods = LEVELS[this.level].foods;
+									this._clearGameArea();
+									this._initSnake();
+									this._createBarriers();
+									this._createApple();
+									this._initScoreInfo();
+									this._initFoodsInfo();
 
-                this.DOM.level.innerHTML = this.level;
+									this.DOM.level.innerHTML = this.level;
 
-                this.timerId = setInterval(
-                    () => {
-                        this._nextStep();
-                    },
-                    300 / LEVELS[this.level].speed
-                );
+									this.timerId = setInterval(
+										() => {
+											this._nextStep();
+										},
+										300 / LEVELS[this.level].speed
+									);
+								}
+								
+								counter--;
+							}, 1000
+						);											
+						
+					}, 1500
+				);					
             }
 
             _clearGameArea(){
@@ -257,7 +282,8 @@ define(
             /* placeholder for an action after game over */
             _gameOverAction(){
                 clearInterval(this.gameTimerId);
-                console.log("GAME OVER!!!");
+                this._removeControlsListeners();										
+				this._showMsg("GAME OVER!!!");
             }
 
             /* methods for checking game over conditions */
@@ -328,14 +354,16 @@ define(
                 // check is it need to finish the game
                 if(this._isGameOver()){
                     clearInterval(this.timerId);
-                    this._gameOverAction();
+					this._gameOverAction();
                 }
 
                 // check is it need to step on the next level
                 if(this.foods === -1){
+					this._showMsg("Next Level");				
+					this._removeControlsListeners();
                     clearInterval(this.timerId);
-                    this.level++;
-                    this._initLevel();
+					this.level++;
+					this._initLevel();																	                   
                 }
 
                 // divide snake on parts and draw one by one
@@ -505,6 +533,14 @@ define(
                 );
             }
 
+			_showMsg(text){
+				this.DOM.msgBox.classList.remove("hidden");
+				this.DOM.msgBox.innerHTML = text;
+			}			
+			_hideMsg(){
+				this.DOM.msgBox.classList.add("hidden");
+			}
+			
             /* methods for work with apple */
             _createApple(){
                 let [ x, y ] = [ random(0, SIZE.width), random(0, SIZE.height) ];
@@ -537,38 +573,58 @@ define(
 
             /* add/remove event listeners */
             _addControlsListeners(){
+				this._keyPressHandler = this._keyPressHandler.bind(this);
+			
                 document.body.addEventListener(
                     "keydown",
-                    (e) => {
-                        const key = e.keyCode;
-
-                        if(!key) return;
-
-                        switch (key){
-                            case 38:
-                                this._nextStep(1);       // arrow up
-                                break;
-                            case 39:
-                                this._nextStep(2);       // arrow right
-                                break;
-                            case 40:
-                                this._nextStep(3);       // arrow down
-                                break;
-                            case 37:
-                                this._nextStep(4);       // arrow left
-                                break;
-                            default:
-                                return;
-                        }
-
-                        e.preventDefault();
-                        e.stopPropagation();
-                        return false;
-                    }
+                    this._keyPressHandler
                 );
-
-                // need to add listeners for buttons
+				
+				this.DOM.saveBtn.addEventListener(
+					"click",
+					() => {
+						Storage.saveToStorage("c_game", this.level, localStorage);
+					}
+				);						
+				
+				this.DOM.newGameBtn.addEventListener(
+					"click",
+					(e) => {
+						e.preventDefault();
+						window.location.reload("#/newgame");
+					}
+				);						
             }
+			_removeControlsListeners(){
+				document.body.removeEventListener(
+                    "keydown",
+                    this._keyPressHandler
+                );
+			}
+			_keyPressHandler(e){
+				const key = e.keyCode;                       
+
+                switch (key){
+                    case 38:
+                        this._nextStep(1);       // arrow up
+                        break;
+                    case 39:
+                        this._nextStep(2);       // arrow right
+                        break;
+                    case 40:
+                        this._nextStep(3);       // arrow down
+                        break;
+                    case 37:
+                        this._nextStep(4);       // arrow left
+                        break;
+                    default:
+                        return;
+                }
+
+                e.preventDefault();
+                e.stopPropagation();
+			}
+		
 
             /* init game info */
             _initScoreInfo(){

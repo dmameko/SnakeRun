@@ -3,10 +3,20 @@
     src: url(fonts/Drift_Wood.ttf);
 }
 
+@keyframes showMenu {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(0%); }
+}
+
+
 html,
 body{
     height: 100%;
     font-family: "Drift Wood";
+}
+
+.hidden{
+	display: none;
 }
 
 .app-container{
@@ -187,6 +197,14 @@ input[type=radio]:checked + label:before {
     background-position: center center;
 }
 
+.app-continue,
+.app-new-game{
+	position: absolute;
+	top: 30%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
 .app-home-nav__appear,
 .app-settings__appear{
     animation-timing-function: cubic-bezier(0.190, 1.000, 0.220, 1.000);
@@ -194,18 +212,91 @@ input[type=radio]:checked + label:before {
     animation-duration: 500ms;
 }
 
+.app-game-area-container{
+    width: 700px;
+	margin: 0 auto;
+	background-color: #7b5937;
+	padding: 10px;
+	border: 24px solid transparent;
+	border-image: url(../images/border.png) 24 repeat repeat;
+	border-radius: 4px;
+}
+
+.app-game-area-info,
+.app-game-area-controls{
+	width: 600px;
+	margin: 0 auto 15px;
+}
+
+.app-game-area-info{
+	display: flex;	
+	justify-content: space-between;
+}
+
+.app-game-area-infoBlock{
+	display: inline-block;
+}
+
 .app-game-area{
-    display: block;
-    margin: 15px auto;
+	position: relative;
+	display: block;
+	margin: 0 auto;
 }
 
-@keyframes showMenu {
-    0% { transform: translateY(-100%); }
-    100% { transform: translateY(0%); }
+.game_area{
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	font-size: 32px;
+	font-weight: 700;
+	color: #bf2c2c;
 }
 
+.app-game-area-canvas{
+	display: block;
+	margin: 0 auto;
+	box-shadow: 0px 0px 5px 0 #39224e;
+}
 
+.app-game-area-infoBlockData{
+	font-size: 20px;
+}
 
+.game-btn{
+	display: inline-block;
+	width: 140px;
+	height: 50px;
+	line-height: 50px;
+	text-align: center;
+	font-family: "Drift Wood";
+	font-size: 16px;
+	font-weight: 700;
+	border-radius: 5px;
+	border: 2px solid #462761;
+	background-color: #6c5a7b;
+	box-sizing: border-box;
+	text-decoration: none;
+	color: #462761;
+	vertical-align: top;
+}
+
+.game-btn:hover{
+	cursor: pointer;
+}
+
+.game-btn:focus{
+	outline: none;
+}
+
+.game-btn:active{
+	background-color: #b4a1c3;
+}
+
+.app-game-area-infoBlockLabel{
+	font-size: 20px;
+	font-weight: 700;
+}
 
 
 

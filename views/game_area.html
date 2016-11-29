@@ -1,4 +1,9 @@
-<div class="app-game-area">
+<div class="app-game-area-container">
+	<div class="app-game-area-controls">
+        <button class="game-btn" id="game_area_save">{save}</button>        
+        <a class="game-btn" id="game_area_home" href="#/home">{home}</a>    
+        <a class="game-btn" id="game_area_new_game" href="#/newgame">{new_game}</a>        
+    </div>
     <div class="app-game-area-info">
         <div class="app-game-area-infoBlock">
             <span class="app-game-area-infoBlockLabel">{level}</span>
@@ -10,17 +15,13 @@
         </div>
         <div class="app-game-area-infoBlock">
             <span class="app-game-area-infoBlockLabel">
-                {foods}
-                <br>
+                {foods}                
                 <span id="game_area_foods"></span>
             </span>
         </div>
-    </div>
-    <div class="app-game-area-info">
-        <button id="game_area_save">{save}</button>
-        <button id="game_area_pause">{pause}</button>
-    </div>
-    <div class="app-game-area-container">
+    </div>    
+    <div class="app-game-area">
+		<div id="game_msg" class="game_area hidden"></div>
         <canvas id="game_area"></canvas>
     </div>
 </div>

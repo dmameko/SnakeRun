@@ -1,5 +1,3 @@
-console.log("NEW GAME CONTROLLER!!!");
-
 require([
     "game/Game"
 ],

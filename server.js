@@ -21,7 +21,8 @@ app.get("/localization", function(req, res){
             "foods":"Їжа",
             "save":"Зберегти",
             "pause":"Пауза",
-            "continue":"Продовжити"
+            "continue":"Продовжити",
+            "home":"Меню"
         },
         ru:{
             "new_game":"Новая Игра",
@@ -37,7 +38,8 @@ app.get("/localization", function(req, res){
             "foods":"Еда",
             "save":"Сохранить",
             "pause":"Пауза",
-            "continue":"Продолжить"
+            "continue":"Продолжить",
+			"home":"Меню"
         },
         en:{
             "new_game":"New Game",
@@ -53,7 +55,8 @@ app.get("/localization", function(req, res){
             "foods":"Foods",
             "save":"Save",
             "pause":"Pause",
-            "continue":"Continue"
+            "continue":"Continue",
+			"home":"Home"
         }
     });
 });
