@@ -1,18 +1,19 @@
 define(
     [
-        "utils/Storage"
+        "utils/Ajax",
+        "utils/Localize"
     ],
-    function(Storage){
+    function(Ajax, Localize){
         const LEVELS = {
             1: {
-                foods: 5,
-                barriers: 10,
+                foods: 1,
+                barriers: 1,
                 speed: 1,
                 startLength: 3
             },
             2: {
                 foods: 7,
-                barriers: 15,
+                barriers: 2,
                 speed: 2,
                 startLength: 3
             },
@@ -66,10 +67,9 @@ define(
             }
         };
         const SIZE = {
-            width: 25,
-            height: 20
+            width: 30,
+            height: 16
         };
-        const LIVES = 3;
         const POINT_SIZE = 20;
         const START_POSITION = {
             x: 0,
@@ -82,152 +82,129 @@ define(
             TO_LEFT: 4,
         };
         let prevStepSnake;
+        let renderTo;
+
+        // define main functions
+        function random(min, max){
+            return Math.floor(Math.random() * (max - min)) + min;
+        }
+        function isPointBelongsToArray(arr, p){
+            const len = arr.length;
+
+            for(let i = 0; i < len; i++){
+                if(arr[i].x === p.x && arr[i].y === p.y) return true;
+            }
+
+            return false;
+        }
+        function directionReversed(currentDir, newDir){
+            return (
+                (currentDir === 1 && newDir === 3)
+                || (currentDir === 3 && newDir === 1)
+                || (currentDir === 2 && newDir === 4)
+                || (currentDir === 4 && newDir === 2)
+            );
+        }
 
         class Game {
             constructor(config){
                 if(!config || !config.renderTo) return;
 
-                this.DOM = {
-                    renderTo: config.renderTo
-                };
-                this.state = {
-                    level: config.level || 1,
-                    lives: config.lives || 3,
-                    score: 0
-                };
+                renderTo = config.renderTo;
 
-                this.started = false;
-                this._createMarkup();
-            }
-
-            _randomNumber(min, max){
-                return Math.floor(Math.random() * (max - min)) + min;
-            }
-
-            _isBarrierAlreadyExists(point){
-                return !!(this.barriers.filter(
-                    (b) => {
-                        return point.x === b.x && point.y === b.y;
-                    }
-                )).length;
-            }
-
-            _createBarriers(){
-                this.barriers = [];
-
-                for(let i = 0; i < LEVELS[this.state.level].barriers; i++){
-                    let [x, y] = [this._randomNumber(0, SIZE.width), this._randomNumber(0, SIZE.height)],
-                        point = { x, y };
-
-                    // exclude doubles
-                    if(this._isBarrierAlreadyExists(point) || this._isSnakePoint(point)){
-                        i--;
-                    } else{
-                        this.barriers.push({ x, y });
-                    }
-                }
-            }
-
-            _isSnakePoint(b){
-                const snake = this.snake;
-                const len = snake.length;
-
-                for(let i = 0; i < len; i++){
-                    let p = snake[i];
-
-                    if(
-                        (p.x === b.x && p.y === b.y)
-                        || (p.x + 1 === b.x && p.y === b.y)
-                        || (p.x + 1 === b.x && p.y + 1 === b.y)
-                        || (p.x + 1 === b.x && p.y - 1 === b.y)
-                    ) return true;
-
-                }
-
-                return false;
-            }
-
-            _createMarkup(){
-                this._createCanvas();
-            }
-
-            _createCanvas(){
-                this.DOM.canvas = document.createElement("canvas");
-
-                this.DOM.canvas.classList.add("app-game-area");
-                this.DOM.canvas.width = SIZE.width * POINT_SIZE;
-                this.DOM.canvas.height = SIZE.height * POINT_SIZE;
-
-                this._defineDefaultImages().then(
+                this.level = config.level || 1;
+                this._loadSpriteImage().then(
                     () => {
-                        this._fillCanvasBG();
-                        this._addControlsListeners();
-                        this._initSnake();
-                        this._createBarriers();
-
-                        this._createApple();
-                        this._drawApple();
-
-                        this._drawSnake();
-                        this._renderBarriers();
+                        this._initGame();
                     }
-                );
-
-                this.DOM.renderTo.appendChild(this.DOM.canvas);
-
-                this.timer = setInterval(
-                    () => {
-                        this._nextStep();
-                    }, 500 / (LEVELS[this.state.level].speed * 0.7)
                 );
             }
 
-            _fillCanvasBG(){
-                const ctx = this.DOM.canvas.getContext("2d");
-
-                for(let x = 0; x < SIZE.width; x++){
-                    for(let y = 0; y < SIZE.height; y++){
-                        this._drawSand(ctx, { x, y });
-                    }
-                }
-            }
-
-            _renderBarriers(){
-                const ctx = this.DOM.canvas.getContext("2d");
-
-                ctx.fillStyle = "#f00";
-                this.barriers.forEach(
-                    (b) => {
-                        this._drawBarrier(ctx, b);
-                    }
-                );
-
-                ctx.fillStyle = "#000";
-            }
-
-            _defineDefaultImages(){
-                let spriteImg = new Image;
-
-                spriteImg.src = "images/game_area/sprite.png";
-
-                this.spriteImg = spriteImg;
-
+            _loadSpriteImage(){
                 return new Promise(
                     (resolve, reject) => {
-                        spriteImg.onload = function(){
+                        this.sprite = new Image();
+                        this.sprite.src = "images/game_area/sprite.png";
+                        this.sprite.onload = function(){
                             resolve();
                         };
-
-                        spriteImg.onerror = function(){
+                        this.sprite.onerror = function(){
                             reject();
                         };
                     }
                 );
             }
 
-            _drawSand(ctx, p){
-                ctx.drawImage(
-                    this.spriteImg,
+            _initGame(){
+                Ajax.get({
+                    url: "views/game_area.html"
+                }).then(
+                    (response) => {
+                        renderTo.innerHTML = Localize.getInstance().translate(response);
+                        this._initDOMElements();
+                        this._initLevel();
+                        this._addControlsListeners();
+                    }
+                );
+            }
+
+            _initDOMElements(){
+                const container = renderTo;
+                const qSelector = container.querySelector.bind(container);
+
+                this.DOM = {
+                    renderTo: renderTo,
+                    canvas: qSelector("#game_area"),
+                    score: qSelector("#game_area_score"),
+                    level: qSelector("#game_area_level"),
+                    foods: qSelector("#game_area_foods"),
+                    saveBtn: qSelector("#game_area_save"),
+                    stopContinueBtn: qSelector("#game_area_pause")
+                };
+
+                // init properties for canvas
+                this.DOM.canvas.classList.add("app-game-area");
+                this.DOM.canvas.width = SIZE.width * POINT_SIZE;
+                this.DOM.canvas.height = SIZE.height * POINT_SIZE;
+
+                // init context (canvas context could be used for few levels)
+                this.context = this.DOM.canvas.getContext("2d");
+            }
+
+            _initLevel(){
+                this.foods = LEVELS[this.level].foods;
+                this._clearGameArea();
+                this._initSnake();
+                this._createBarriers();
+                this._createApple();
+                this._initScoreInfo();
+                this._initFoodsInfo();
+
+                this.DOM.level.innerHTML = this.level;
+
+                this.timerId = setInterval(
+                    () => {
+                        this._nextStep();
+                    },
+                    300 / LEVELS[this.level].speed
+                );
+            }
+
+            _clearGameArea(){
+                this.context.fillStyle = "#000";
+                this.context.fillRect(0, 0, SIZE.width * POINT_SIZE, SIZE.height * POINT_SIZE);
+
+                // fill game area by sand
+                for(let x = 0; x < SIZE.width; x++){
+                    for(let y = 0; y < SIZE.height; y++){
+                        this._drawSandPoint({ x, y });
+                    }
+                }
+            }
+
+            _drawSandPoint(p){
+                this.context.drawImage(
+                    this.sprite,
                     20,
                     40,
                     POINT_SIZE,
@@ -239,67 +216,94 @@ define(
                 );
             }
 
-            _drawBarrier(ctx, p){
-                ctx.drawImage(
-                    this.spriteImg,
-                    0,
-                    40,
-                    POINT_SIZE,
-                    POINT_SIZE,
-                    p.x * POINT_SIZE,
-                    p.y * POINT_SIZE,
-                    POINT_SIZE,
-                    POINT_SIZE
+            _createBarriers(){
+                this.barriers = [];
+
+                // init barriers
+                for(let i = 0; i < LEVELS[this.level].barriers; i++){
+                    let [x, y] = [ random(0, SIZE.width), random(0, SIZE.height) ],
+                        point = { x, y };
+
+                    // exclude doubles
+                    if(isPointBelongsToArray(this.barriers, point) || isPointBelongsToArray(this.snake, point)){
+                        i--;
+                    } else{
+                        this.barriers.push({ x, y });
+                    }
+                }
+
+                // render barriers
+                this.barriers.forEach(
+                    (b) => {
+                        this.context.drawImage(
+                            this.sprite,
+                            0,
+                            40,
+                            POINT_SIZE,
+                            POINT_SIZE,
+                            b.x * POINT_SIZE,
+                            b.y * POINT_SIZE,
+                            POINT_SIZE,
+                            POINT_SIZE
+                        );
+                    }
                 );
             }
 
-            _createApple(){
-                if(!this.state.foodsRemain){
-                    return;
+            _isGameOver(){
+                return this._touchedGameAreaEdges() || this._touchedBarriers() || this._touchedItself();
+            }
+
+            /* placeholder for an action after game over */
+            _gameOverAction(){
+                clearInterval(this.gameTimerId);
+                console.log("GAME OVER!!!");
+            }
+
+            /* methods for checking game over conditions */
+            _touchedGameAreaEdges(){
+                // snake can touch area edge only by head
+                const snakeHeadPoint = this.snake[0];
+
+                if(
+                    (snakeHeadPoint.x < 0)
+                    || (snakeHeadPoint.x >= SIZE.width)
+                    || (snakeHeadPoint.y < 0)
+                    || (snakeHeadPoint.y >= SIZE.height)
+                ){
+                    return true;
                 }
 
-                console.log(this.state.foodsRemain);
+                return false;
+            }
+            _touchedBarriers(){
+                // snake can touch barrier only by it head
+                const snakeHeadPoint = this.snake[0];
 
-                let [ x, y ] = [ this._randomNumber(0, SIZE.width), this._randomNumber(0, SIZE.height) ];
+                return this.barriers && isPointBelongsToArray(this.barriers, snakeHeadPoint);
+            }
+            _touchedItself(){
+                const snake = this.snake;
+                const snakeHeadPoint = snake[0];
+                const len = snake.length;
 
-                while(
-                    this._isBarrierAlreadyExists({ x, y })
-                    || this._isSnakePoint({ x, y })
-                    ){
-                    [ x, y ] = [ this._randomNumber(0, SIZE.width), this._randomNumber(0, SIZE.height) ];
+                for(let i = 1; i < len; i++){
+                    let p = snake[i];
+
+                    if(p.x === snakeHeadPoint.x && p.y === snakeHeadPoint.y) return true;
+
                 }
 
-                this.state.foodsRemain -= 1;
-                this.apple = { x, y };
+                return false;
             }
 
-            _drawApple(){
-                const ctx = this.DOM.canvas.getContext("2d");
-                const p = this.apple;
-
-                ctx.drawImage(
-                    this.spriteImg,
-                    0,
-                    60,
-                    POINT_SIZE,
-                    POINT_SIZE,
-                    p.x * POINT_SIZE,
-                    p.y * POINT_SIZE,
-                    POINT_SIZE,
-                    POINT_SIZE
-                );
-            }
-
-            _doesSnakeEatApple(){
-                return this.snake[0].x === this.apple.x && this.snake[0].y === this.apple.y;
-            }
-
+            /* methods for drawing snake parts */
             _initSnake(){
-                let length = LEVELS[this.state.level].startLength;
+                let len = LEVELS[this.level].startLength - 1;
 
+                // init snake points
                 this.snake = [];
-
-                for(let x = length - 1; x >= START_POSITION.x; x--){
+                for(let x = len; x >= START_POSITION.x; x--){
                     this.snake.push({
                         x: x,
                         y: START_POSITION.y,
@@ -309,99 +313,48 @@ define(
                     });
                 }
 
-                this.state.foodsRemain = LEVELS[this.state.level].foods;
+                this._drawSnake();
             }
-
-            _isSnakeEatSnake(b){
-                const snake = this.snake;
-                const len = snake.length;
-
-                for(let i = 1; i < len; i++){
-                    let p = snake[i];
-
-                    if(p.x === b.x && p.y === b.y) return true;
-
-                }
-
-                return false;
+            _clearSnake(){
+                this.snake.forEach(
+                    (p) => {
+                        this._drawSandPoint(p);
+                    }
+                );
             }
-
             _drawSnake(){
-                let ctx = this.DOM.canvas.getContext("2d"),
-                    len = this.snake.length - 1;
-
                 this._clearSnake();
 
-                if(
-                    !this._doesNotEdgesTouch()
-                    || !this._doesNotBarriersTouch()
-                    || this._isSnakeEatSnake(this.snake[0])
-                ){
-                    clearInterval(this.timer);
-                    this.snake = prevStepSnake;             //// HERE YOU NEED TO WRITE "GAME OVER"!!!
+                // check is it need to finish the game
+                if(this._isGameOver()){
+                    clearInterval(this.timerId);
+                    this._gameOverAction();
                 }
 
-                if(!this.state.foodsRemain){
-                    clearInterval(this.timer);
-                    this.snake = prevStepSnake;             //// HERE YOU NEED TO WRITE "CONGRATS! NEXT LEVEL!!!"
+                // check is it need to step on the next level
+                if(this.foods === -1){
+                    clearInterval(this.timerId);
+                    this.level++;
+                    this._initLevel();
                 }
 
+                // divide snake on parts and draw one by one
                 this.snake.forEach(
                     (p, id) => {
+                        let len = this.snake.length - 1;
                         if(id === len){
-                            this._drawTail(ctx, p);
+                            this._drawSnakeTailPoint();
                         } else if(id === 0){
-                            this._drawHead(ctx, p);
+                            this._drawSnakeHeadPoint();
                         } else{
-                            this._drawBody(ctx, p, id);
+                            this._drawSnakeBodyPoint(id);
                         }
                     }
                 );
             }
-
-            _drawTail(ctx, p){
-                let pos = {
-                    x: 0,
-                    y: 0
-                };
-
-                switch(p.dir){
-                    case DIR.TO_TOP:
-                        pos.x = 60;
-                        pos.y = 40;
-                        break;
-                    case DIR.TO_RIGHT:
-                        pos.x = 80;
-                        pos.y = 40;
-                        break;
-                    case DIR.TO_BOTTOM:
-                        pos.x = 80;
-                        pos.y = 60;
-                        break;
-                    case DIR.TO_LEFT:
-                        pos.x = 60;
-                        pos.y = 60;
-                        break;
-                }
-
-                ctx.drawImage(
-                    this.spriteImg,
-                    pos.x,
-                    pos.y,
-                    POINT_SIZE,
-                    POINT_SIZE,
-                    p.x * POINT_SIZE,
-                    p.y * POINT_SIZE,
-                    POINT_SIZE,
-                    POINT_SIZE
-                );
-            }
-
-            _drawHead(ctx, p){
-                let pos = {
-                    x: 0,
-                    y: 0
-                };
+            _drawSnakeHeadPoint(){
+                const p = this.snake[0];
+                let pos = {};
 
                 switch(p.dir){
                     case DIR.TO_TOP:
@@ -422,8 +375,8 @@ define(
                         break;
                 }
 
-                ctx.drawImage(
-                    this.spriteImg,
+                this.context.drawImage(
+                    this.sprite,
                     pos.x,
                     pos.y,
                     POINT_SIZE,
@@ -434,16 +387,17 @@ define(
                     POINT_SIZE
                 );
             }
+            _drawSnakeBodyPoint(id){
+                const snake = this.snake;
+                const p = snake[id];
 
-            _drawBody(ctx, p, id){
                 let pos = {
                     x: 20,
                     y: 0
                 };
-                let snake = this.snake;
                 let state = "";
 
-                state += (snake[id].end.toString() + snake[id].start.toString());
+                state += (p.end + "" + p.start);
 
                 switch (state){
                     case "34":
@@ -478,8 +432,8 @@ define(
                         break;
                 }
 
-                ctx.drawImage(
-                    this.spriteImg,
+                this.context.drawImage(
+                    this.sprite,
                     pos.x,
                     pos.y,
                     POINT_SIZE,
@@ -490,22 +444,105 @@ define(
                     POINT_SIZE
                 );
             }
+            _drawSnakeTailPoint(){
+                let pos = {};
+                const p = this.snake[ this.snake.length - 1 ];
 
-            _clearSnake(){
-                let ctx = this.DOM.canvas.getContext("2d");
+                switch(p.dir){
+                    case DIR.TO_TOP:
+                        pos.x = 60;
+                        pos.y = 40;
+                        break;
+                    case DIR.TO_RIGHT:
+                        pos.x = 80;
+                        pos.y = 40;
+                        break;
+                    case DIR.TO_BOTTOM:
+                        pos.x = 80;
+                        pos.y = 60;
+                        break;
+                    case DIR.TO_LEFT:
+                        pos.x = 60;
+                        pos.y = 60;
+                        break;
+                }
 
-                this.snake.forEach(
+                this.context.drawImage(
+                    this.sprite,
+                    pos.x,
+                    pos.y,
+                    POINT_SIZE,
+                    POINT_SIZE,
+                    p.x * POINT_SIZE,
+                    p.y * POINT_SIZE,
+                    POINT_SIZE,
+                    POINT_SIZE
+                );
+            }
+            _moveSnakeHead(){
+                const snakeHeadPoint = this.snake[0];
+
+                switch (snakeHeadPoint.dir){
+                    case DIR.TO_TOP:
+                        snakeHeadPoint.y--;
+                        break;
+                    case DIR.TO_RIGHT:
+                        snakeHeadPoint.x++;
+                        break;
+                    case DIR.TO_BOTTOM:
+                        snakeHeadPoint.y++;
+                        break;
+                    case DIR.TO_LEFT:
+                        snakeHeadPoint.x--;
+                        break;
+                }
+            }
+            _copySnakeDeep(){
+                return this.snake.map(
                     (p) => {
-                        this._drawSand(ctx, p);
+                        return Object.assign({}, p);
                     }
                 );
             }
 
+            /* methods for work with apple */
+            _createApple(){
+                let [ x, y ] = [ random(0, SIZE.width), random(0, SIZE.height) ];
+
+                // check if generated apple point is barrier or snake point
+                while(isPointBelongsToArray(this.barriers, { x, y }) || isPointBelongsToArray(this.snake, { x, y })){
+                    [ x, y ] = [ random(0, SIZE.width), random(0, SIZE.height) ];
+                }
+
+                this.foods--;
+                this.apple = { x, y };
+
+                this.context.drawImage(
+                    this.sprite,
+                    0,
+                    60,
+                    POINT_SIZE,
+                    POINT_SIZE,
+                    x * POINT_SIZE,
+                    y * POINT_SIZE,
+                    POINT_SIZE,
+                    POINT_SIZE
+                );
+            }
+            _doesSnakeEatApple(){
+                const snakeHeadPoint = this.snake[0];
+
+                return isPointBelongsToArray([ this.apple ], snakeHeadPoint);
+            }
+
+            /* add/remove event listeners */
             _addControlsListeners(){
                 document.body.addEventListener(
                     "keydown",
                     (e) => {
                         const key = e.keyCode;
+
+                        if(!key) return;
 
                         switch (key){
                             case 38:
@@ -525,12 +562,47 @@ define(
                         }
 
                         e.preventDefault();
+                        e.stopPropagation();
+                        return false;
                     }
                 );
+
+                // need to add listeners for buttons
+            }
+
+            /* init game info */
+            _initScoreInfo(){
+                let score = this.score || 0;
+
+                Object.defineProperty(this, "score", {
+                    configurable: true,
+                    enumerable: true,
+                    get: () => score,
+                    set: (value) => {
+                        score = value;
+                        this.DOM.score.innerHTML = value;
+                    }
+                });
+            }
+            _initFoodsInfo(){
+                let foodsRemain = this.foodsRemain || 0;
+
+                Object.defineProperty(this, "foodsRemain", {
+                    configurable: true,
+                    enumerable: true,
+                    get: () => foodsRemain,
+                    set: (value) => {
+                        const remainFoodsInfo = `(${value}/${LEVELS[this.level].foods})`;
+
+                        foodsRemain = value;
+                        this.DOM.foods.innerHTML = remainFoodsInfo;
+                    }
+                });
+
+                this.foodsRemain = LEVELS[this.level].foods - this.foods - 1;
             }
 
             _nextStep(dir){
-                let snake = this.snake;
                 let snakeCopy = this._copySnakeDeep();
 
                 this._clearSnake();
@@ -543,11 +615,11 @@ define(
                     let p = this.snake[i];
 
                     if(i === 0){
-                        if(this._isReverse(p.dir, dir)){
+                        if(directionReversed(p.dir, dir)){
                             break;
                         } else{
                             this.snake[i].dir = dir;
-                            this._movePoint(this.snake[i]);
+                            this._moveSnakeHead();
                         }
                     } else {
                         this.snake[i].x = snakeCopy[i - 1].x;
@@ -566,8 +638,10 @@ define(
                 }
 
                 if(this._doesSnakeEatApple()){
+                    this.score++;
+                    this.foodsRemain = LEVELS[this.level].foods - this.foods;
+
                     this._createApple();
-                    this._drawApple();
 
                     let lastPoint = Object.assign({}, this.snake[this.snake.length - 1]);
 
@@ -586,75 +660,6 @@ define(
                 }
 
                 this._drawSnake();
-            }
-
-            _movePoint(p){
-                switch (p.dir){
-                    case DIR.TO_TOP:
-                        p.y--;
-                        break;
-                    case DIR.TO_RIGHT:
-                        p.x++;
-                        break;
-                    case DIR.TO_BOTTOM:
-                        p.y++;
-                        break;
-                    case DIR.TO_LEFT:
-                        p.x--;
-                        break;
-                }
-            }
-
-            _copySnakeDeep(){
-                return this.snake.map(
-                    (p) => {
-                        return Object.assign({}, p);
-                    }
-                );
-            }
-
-            _doesNotEdgesTouch(){
-                const snake = this.snake;
-                const len = snake.length;
-
-                for(let i = 0; i < len; i++){
-                    let { x, y } = snake[i];
-
-                    if(x < 0 || x >= SIZE.width || y < 0 || y >= SIZE.height) return false;
-
-                }
-
-                return true;
-            }
-
-            _doesNotBarriersTouch(){
-                const snake = this.snake;
-                const barLength = this.barriers.length;
-                const len = snake.length;
-
-                for(let i = 0; i < barLength; i++){
-                    if(!doesNotBarrierTouch(this.barriers[i])) return false;
-
-                }
-
-                function doesNotBarrierTouch(b){
-                    for(let i = 0; i < len; i++){
-                        if(snake[i].x === b.x && snake[i].y === b.y) return false;
-                    }
-
-                    return true;
-                }
-
-                return true;
-            }
-
-            _isReverse(cDir, nDir){
-                return (
-                    (cDir === 1 && nDir === 3)
-                    || (cDir === 3 && nDir === 1)
-                    || (cDir === 2 && nDir === 4)
-                    || (cDir === 4 && nDir === 2)
-                );
             }
         }
 

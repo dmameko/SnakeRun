@@ -1,0 +1,26 @@
+<div class="app-game-area">
+    <div class="app-game-area-info">
+        <div class="app-game-area-infoBlock">
+            <span class="app-game-area-infoBlockLabel">{level}</span>
+            <span class="app-game-area-infoBlockData" id="game_area_level"></span>
+        </div>
+        <div class="app-game-area-infoBlock">
+            <span class="app-game-area-infoBlockLabel">{score}</span>
+            <span class="app-game-area-infoBlockData" id="game_area_score">0</span>
+        </div>
+        <div class="app-game-area-infoBlock">
+            <span class="app-game-area-infoBlockLabel">
+                {foods}
+                <br>
+                <span id="game_area_foods"></span>
+            </span>
+        </div>
+    </div>
+    <div class="app-game-area-info">
+        <button id="game_area_save">{save}</button>
+        <button id="game_area_pause">{pause}</button>
+    </div>
+    <div class="app-game-area-container">
+        <canvas id="game_area"></canvas>
+    </div>
+</div>

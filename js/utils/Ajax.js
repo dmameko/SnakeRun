@@ -15,7 +15,7 @@ define([
                             let statusCodeCls = Math.round(xhr.status / 100);
 
                             if(statusCodeCls === 2){
-                                resolve(JSON.parse(xhr.response));
+                                resolve(xhr.response);
                             } else{
                                 reject();
                             }

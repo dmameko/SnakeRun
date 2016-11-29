@@ -15,7 +15,13 @@ app.get("/localization", function(req, res){
             "game_effect":"Ефекти гри",
             "language":"Мова",
             "on":"Вімк",
-            "off":"Вимк"
+            "off":"Вимк",
+            "level":"Рівень",
+            "score":"Рахунок",
+            "foods":"Їжа",
+            "save":"Зберегти",
+            "pause":"Пауза",
+            "continue":"Продовжити"
         },
         ru:{
             "new_game":"Новая Игра",
@@ -25,7 +31,13 @@ app.get("/localization", function(req, res){
             "game_effect":"Игровые Эффекты",
             "language":"Язык",
             "on":"Вкл",
-            "off":"Выкл"
+            "off":"Выкл",
+            "level":"Уровень",
+            "score":"Счет",
+            "foods":"Еда",
+            "save":"Сохранить",
+            "pause":"Пауза",
+            "continue":"Продолжить"
         },
         en:{
             "new_game":"New Game",
@@ -35,7 +47,13 @@ app.get("/localization", function(req, res){
             "game_effect":"Game Effect",
             "language":"Language",
             "on":"On",
-            "off":"Off"
+            "off":"Off",
+            "level":"Level",
+            "score":"Score",
+            "foods":"Foods",
+            "save":"Save",
+            "pause":"Pause",
+            "continue":"Continue"
         }
     });
 });

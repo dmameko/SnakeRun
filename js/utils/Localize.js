@@ -10,6 +10,8 @@ define([
         constructor(){
             if(inst) return inst;
 
+            inst = this;
+
             this.promise = this._getData();
         }
 
@@ -21,7 +23,7 @@ define([
                         url: "/localization"
                     }).then(
                         (localization) => {
-                            this._dict = localization;
+                            this._dict = JSON.parse(localization);
                             resolve();
                         },
                         () => {
@@ -40,6 +42,10 @@ define([
             Storage.saveToStorage("lang", lang, localStorage);
 
             return String.compileTemplate(text, loc);
+        }
+
+        static getInstance(){
+            return inst || new Localize();
         }
     }
 

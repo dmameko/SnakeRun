@@ -33,7 +33,7 @@ define([
 
             keys.forEach(
                 (key) => {
-                    __html = __html.replace("{" + key + "}", obj[key]);
+                    __html = __html.replace("{" + key + "}", obj[key] || key);
                 }
             )
 
