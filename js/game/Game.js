@@ -8,62 +8,62 @@ define(
         const LEVELS = {
             1: {
                 foods: 1,
-                barriers: 1,
+                barriers: 3,
                 speed: 1,
                 startLength: 3
             },
             2: {
                 foods: 7,
-                barriers: 2,
-                speed: 2,
+                barriers: 5,
+                speed: 1.5,
                 startLength: 3
             },
             3: {
                 foods: 10,
-                barriers: 15,
-                speed: 3,
+                barriers: 8,
+                speed: 1.5,
                 startLength: 4
             },
             4: {
                 foods: 14,
-                barriers: 20,
-                speed: 4,
+                barriers: 13,
+                speed: 2,
                 startLength: 4
             },
             5: {
                 foods: 16,
-                barriers: 20,
-                speed: 4,
+                barriers: 21,
+                speed: 2,
                 startLength: 5
             },
             6: {
-                foods: 17,
+                foods: 21,
                 barriers: 25,
-                speed: 5,
+                speed: 2.5,
                 startLength: 5
             },
             7: {
-                foods: 18,
+                foods: 34,
                 barriers: 30,
-                speed: 5,
+                speed: 2.5,
                 startLength: 6
             },
             8: {
                 foods: 19,
-                barriers: 30,
-                speed: 6,
+                barriers: 34,
+                speed: 3,
                 startLength: 6
             },
             9: {
                 foods: 20,
-                barriers: 30,
-                speed: 6,
+                barriers: 37,
+                speed: 3,
                 startLength: 7
             },
             10: {
                 foods: 25,
-                barriers: 35,
-                speed: 6,
+                barriers: 40,
+                speed: 3.5,
                 startLength: 8
             }
         };
@@ -114,6 +114,7 @@ define(
                 renderTo = config.renderTo;
 
                 this.level = config.level || 1;
+                this.allowMusicEffects = Storage.getFromStorage("game_effects", localStorage) === "on";
                 this._loadSpriteImage().then(
                     () => {
                         this._initGame();
@@ -164,6 +165,13 @@ define(
                     newGameBtn: qSelector("#game_area_new_game")                  
                 };
 
+                this.audio = {
+                    eat: qSelector("#eat_apple"),
+                    gameOver: qSelector("#game_over"),
+                    nextLevel: qSelector("#next_level"),
+                    move: qSelector("#move_make")
+                };
+
                 // init properties for canvas
                 this.DOM.canvas.classList.add("app-game-area-canvas");
                 this.DOM.canvas.width = SIZE.width * POINT_SIZE;
@@ -174,12 +182,24 @@ define(
             }
 
             _initLevel(){				
-				this._showMsg("Level " + this.level);
+				this._showMsg(Localize.getInstance().translateKey("level") + " " + this.level);
 			
 				let counter = 10;							
 				let timeout = setTimeout(
 					() => {
 						clearTimeout(timeout);
+
+                        this._addControlsListeners();
+                        this.foods = LEVELS[this.level].foods;
+                        this._clearGameArea();
+                        this._initSnake();
+                        this._createBarriers();
+                        this._createApple();
+                        this._initScoreInfo();
+                        this._initFoodsInfo();
+
+                        this.DOM.level.innerHTML = this.level;
+
 						let timer = setInterval(
 							() => {
 								this._showMsg(counter);
@@ -187,17 +207,6 @@ define(
 								if(!counter){
 									clearInterval(timer);
 									this._hideMsg();
-																		
-									this._addControlsListeners();
-									this.foods = LEVELS[this.level].foods;
-									this._clearGameArea();
-									this._initSnake();
-									this._createBarriers();
-									this._createApple();
-									this._initScoreInfo();
-									this._initFoodsInfo();
-
-									this.DOM.level.innerHTML = this.level;
 
 									this.timerId = setInterval(
 										() => {
@@ -283,7 +292,8 @@ define(
             _gameOverAction(){
                 clearInterval(this.gameTimerId);
                 this._removeControlsListeners();										
-				this._showMsg("GAME OVER!!!");
+				this._showMsg(Localize.getInstance().translateKey("gameOver") + "!");
+                this.allowMusicEffects && this.audio.gameOver.play();
             }
 
             /* methods for checking game over conditions */
@@ -359,11 +369,12 @@ define(
 
                 // check is it need to step on the next level
                 if(this.foods === -1){
-					this._showMsg("Next Level");				
+                    this._showMsg("Next Level");
 					this._removeControlsListeners();
                     clearInterval(this.timerId);
 					this.level++;
-					this._initLevel();																	                   
+					this._initLevel();
+                    this.allowMusicEffects && this.audio.nextLevel.play();
                 }
 
                 // divide snake on parts and draw one by one
@@ -674,6 +685,9 @@ define(
                         if(directionReversed(p.dir, dir)){
                             break;
                         } else{
+                            if(this.allowMusicEffects && this.snake[i].dir !== dir){
+                                this.audio.move.play();
+                            }
                             this.snake[i].dir = dir;
                             this._moveSnakeHead();
                         }
@@ -694,6 +708,7 @@ define(
                 }
 
                 if(this._doesSnakeEatApple()){
+                    this.allowMusicEffects && this.audio.eat.play();
                     this.score++;
                     this.foodsRemain = LEVELS[this.level].foods - this.foods;
 

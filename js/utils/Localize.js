@@ -44,6 +44,13 @@ define([
             return String.compileTemplate(text, loc);
         }
 
+        translateKey(key){
+            let lang = Storage.getFromStorage("lang", localStorage) || "en",
+                loc = this._dict[lang];
+
+            return loc[key] || key;
+        }
+
         static getInstance(){
             return inst || new Localize();
         }

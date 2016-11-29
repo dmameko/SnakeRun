@@ -22,7 +22,9 @@ app.get("/localization", function(req, res){
             "save":"Зберегти",
             "pause":"Пауза",
             "continue":"Продовжити",
-            "home":"Меню"
+            "home":"Меню",
+            "level":"Рівень",
+            "gameOver":"Гру закінчено"
         },
         ru:{
             "new_game":"Новая Игра",
@@ -39,7 +41,9 @@ app.get("/localization", function(req, res){
             "save":"Сохранить",
             "pause":"Пауза",
             "continue":"Продолжить",
-			"home":"Меню"
+			"home":"Меню",
+            "level":"Уровень",
+            "gameOver":"Игра закончена"
         },
         en:{
             "new_game":"New Game",
@@ -56,7 +60,9 @@ app.get("/localization", function(req, res){
             "save":"Save",
             "pause":"Pause",
             "continue":"Continue",
-			"home":"Home"
+			"home":"Home",
+            "level":"Level",
+            "gameOver":"Game Over"
         }
     });
 });
