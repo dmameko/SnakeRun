@@ -85,28 +85,114 @@ define(
         let prevStepSnake;
         let renderTo;
 
-        // define main functions
-        function random(min, max){
-            return Math.floor(Math.random() * (max - min)) + min;
-        }
-        function isPointBelongsToArray(arr, p){
-            const len = arr.length;
+		class Point{
+			constructor(props, isRandom){
+				if(isRandom){
+					Object.assign(this, props, {
+						x: Point.random(0, SIZE.width),
+						y: Point.random(0, SIZE.height)
+					});
+				} else{
+					Object.assign(this, props);
+				}						
+			}
+			setProps(props){
+				Object.assign(this, props);
+			}
+			draw(ctx){
+				const context = this.ctx || ctx;
+			
+				context && context.fillRect(this.x, this.y, POINT_SIZE, POINT_SIZE);
+			}
+			static isPointBelongsToArray(arr, p){
+				const len = arr.length;
 
-            for(let i = 0; i < len; i++){
-                if(arr[i].x === p.x && arr[i].y === p.y) return true;
-            }
+				for(let i = 0; i < len; i++){
+					if(arr[i].x === p.x && arr[i].y === p.y) return true;
+				}
 
-            return false;
-        }
-        function directionReversed(currentDir, newDir){
-            return (
-                (currentDir === 1 && newDir === 3)
-                || (currentDir === 3 && newDir === 1)
-                || (currentDir === 2 && newDir === 4)
-                || (currentDir === 4 && newDir === 2)
-            );
-        }
-
+				return false;
+			}
+			static random(min, max){
+				return Math.floor(Math.random() * (max - min)) + min;
+			}
+		}
+		
+		class SandPoint extends Point{
+			constructor(props){
+				super(props);
+			}
+			draw(ctx){
+				const context = this.ctx || ctx;
+			
+				context && context.drawImage(
+                    this.sprite,
+                    20,
+                    40,
+                    POINT_SIZE,
+                    POINT_SIZE,
+                    this.x * POINT_SIZE,
+                    this.y * POINT_SIZE,
+                    POINT_SIZE,
+                    POINT_SIZE
+                );
+			}
+		}
+		
+		class BarrierPoint extends Point{
+			constructor(props, arr){
+				let p = { 
+					x: Point.random(0, SIZE.width),
+					y: Point.random(0, SIZE.height)
+				};
+				
+				while(Point.isPointBelongsToArray(arr, p)){
+					p = { 
+						x: Point.random(0, SIZE.width),
+						y: Point.random(0, SIZE.height)
+					};
+				}
+				
+				super(Object.assign(props, p));
+			}
+			draw(ctx){
+				const context = this.ctx || ctx;
+			
+				context && context.drawImage(
+                    this.sprite,
+                    0,
+                    40,
+                    POINT_SIZE,
+                    POINT_SIZE,
+                    this.x * POINT_SIZE,
+                    this.y * POINT_SIZE,
+                    POINT_SIZE,
+                    POINT_SIZE
+                );
+			}
+		}
+		
+		class ApplePoint extends BarrierPoint{
+			constructor(props, arr){
+				super(props, arr);
+			}
+			draw(ctx){
+				const context = this.ctx || ctx;
+			
+				context && context.drawImage(
+                    this.sprite,
+                    0,
+                    60,
+                    POINT_SIZE,
+                    POINT_SIZE,
+                    this.x * POINT_SIZE,
+                    this.y * POINT_SIZE,
+                    POINT_SIZE,
+                    POINT_SIZE
+                )
+			}
+		}			
+		             
         class Game {
             constructor(config){
                 if(!config || !config.renderTo) return;
@@ -184,7 +270,7 @@ define(
             _initLevel(){				
 				this._showMsg(Localize.getInstance().translateKey("level") + " " + this.level);
 			
-				let counter = 10;							
+				let counter = 6;							
 				let timeout = setTimeout(
 					() => {
 						clearTimeout(timeout);
@@ -237,51 +323,27 @@ define(
             }
 
             _drawSandPoint(p){
-                this.context.drawImage(
-                    this.sprite,
-                    20,
-                    40,
-                    POINT_SIZE,
-                    POINT_SIZE,
-                    p.x * POINT_SIZE,
-                    p.y * POINT_SIZE,
-                    POINT_SIZE,
-                    POINT_SIZE
-                );
+				const sand = new SandPoint({
+					x: p.x, 
+					y: p.y,
+					sprite: this.sprite
+				});
+				
+				sand.draw(this.context);
             }
 
             _createBarriers(){
                 this.barriers = [];
 
                 // init barriers
-                for(let i = 0; i < LEVELS[this.level].barriers; i++){
-                    let [x, y] = [ random(0, SIZE.width), random(0, SIZE.height) ],
-                        point = { x, y };
-
-                    // exclude doubles
-                    if(isPointBelongsToArray(this.barriers, point) || isPointBelongsToArray(this.snake, point)){
-                        i--;
-                    } else{
-                        this.barriers.push({ x, y });
-                    }
-                }
-
-                // render barriers
-                this.barriers.forEach(
-                    (b) => {
-                        this.context.drawImage(
-                            this.sprite,
-                            0,
-                            40,
-                            POINT_SIZE,
-                            POINT_SIZE,
-                            b.x * POINT_SIZE,
-                            b.y * POINT_SIZE,
-                            POINT_SIZE,
-                            POINT_SIZE
-                        );
-                    }
-                );
+                for(let i = 0; i < LEVELS[this.level].barriers; i++){                    
+					let b = new BarrierPoint({ 
+						sprite: this.sprite
+					}, this.snake.concat(this.barriers));
+					
+					this.barriers.push(b);
+					b.draw(this.context);
+                }                
             }
 
             _isGameOver(){
@@ -316,7 +378,7 @@ define(
                 // snake can touch barrier only by it head
                 const snakeHeadPoint = this.snake[0];
 
-                return this.barriers && isPointBelongsToArray(this.barriers, snakeHeadPoint);
+                return this.barriers && Point.isPointBelongsToArray(this.barriers, snakeHeadPoint);
             }
             _touchedItself(){
                 const snake = this.snake;
@@ -553,33 +615,19 @@ define(
 			}
 			
             /* methods for work with apple */
-            _createApple(){
-                let [ x, y ] = [ random(0, SIZE.width), random(0, SIZE.height) ];
-
-                // check if generated apple point is barrier or snake point
-                while(isPointBelongsToArray(this.barriers, { x, y }) || isPointBelongsToArray(this.snake, { x, y })){
-                    [ x, y ] = [ random(0, SIZE.width), random(0, SIZE.height) ];
-                }
-
-                this.foods--;
-                this.apple = { x, y };
-
-                this.context.drawImage(
-                    this.sprite,
-                    0,
-                    60,
-                    POINT_SIZE,
-                    POINT_SIZE,
-                    x * POINT_SIZE,
-                    y * POINT_SIZE,
-                    POINT_SIZE,
-                    POINT_SIZE
-                );
+            _createApple(){                
+				this.apple = new ApplePoint({
+					sprite: this.sprite
+				}, this.snake.concat(this.barriers));
+				
+				this.foods--;
+				
+				this.apple.draw(this.context);
             }
             _doesSnakeEatApple(){
                 const snakeHeadPoint = this.snake[0];
 
-                return isPointBelongsToArray([ this.apple ], snakeHeadPoint);
+                return Point.isPointBelongsToArray([ this.apple ], snakeHeadPoint);
             }
 
             /* add/remove event listeners */
@@ -682,7 +730,10 @@ define(
                     let p = this.snake[i];
 
                     if(i === 0){
-                        if(directionReversed(p.dir, dir)){
+                        if((p.dir === 1 && dir === 3)
+							|| (p.dir === 3 && dir === 1)
+							|| (p.dir === 2 && dir === 4)
+							|| (p.dir === 4 && dir === 2)){
                             break;
                         } else{
                             if(this.allowMusicEffects && this.snake[i].dir !== dir){
